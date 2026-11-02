@@ -81,7 +81,11 @@
 - FR-3.6 Unten drei Pillen: **Tempo** („1,2×“) · **Wiedergabeort** („Uhr“ / „iPhone“) · **Kapitel**.
 - FR-3.7 „…“-Menü behält: Download / Von der Uhr entfernen, Lauftext-Modus. „Auf iPhone abspielen“ wandert in FR-4.
 - FR-3.8 Digitale Krone = Lautstärke (bestehend); Doppeltipp-Geste = Play/Pause (bestehend, watchOS 11+).
-- FR-3.9 Spielt das iPhone: derselbe Player-Aufbau (statt System-`NowPlayingView`), gesteuert per WatchConnectivity; Pille zeigt „iPhone“.
+- FR-3.9 Spielt das iPhone: **System-`NowPlayingView` bleibt** (Design: *Watch · iPhone spielt (System-Player)*). Einstieg über die „Jetzt läuft“-Kachel. Das „…“-Menü (`RemotePlayerView`) wird erweitert um:
+  - **Tempo** (bestehend, `SpeedPickerSheet`)
+  - **Kapitel** – Liste aus den vom iPhone gesendeten `chapterStarts`/`chapterTitles` (`sendCurrentBook`), Tap sendet Sprung-Befehl ans iPhone
+  - **Auf der Uhr abspielen** – startet den lokalen Player an der aktuellen iPhone-Position und pausiert das iPhone (FR-4.2, FR-4.3)
+- FR-3.10 Eigener Player auch für iPhone-Wiedergabe: **Phase 2**, nicht Teil dieser Spec.
 
 ### FR-4 Wiedergabeort (Design: *Watch · Wiedergabe auf*)
 - FR-4.1 Liste mit zwei Optionen: **Apple Watch** (Untertitel: verbundene Kopfhörer bzw. „Kopfhörer verbinden“) und **iPhone** (Untertitel: „Verbunden“ / „Nicht erreichbar“, dann deaktiviert).
@@ -111,7 +115,8 @@
 - Bibliothek komplett auf der Watch durchsuchen (Suche).
 - E-Books auf der Watch.
 - Standalone-Login ohne iPhone.
-- Neue WatchConnectivity-Nachrichten außer für FR-3.9 (iPhone-Steuerung) und optional Cover-Farbe.
+- Eigener Player für iPhone-Wiedergabe (Phase 2).
+- Neue WatchConnectivity-Nachrichten außer `seekToChapter`/`pause` (FR-3.9) und Cover-Farbe.
 
 ## 7. Akzeptanzkriterien (Gherkin)
 
@@ -135,6 +140,15 @@ Szenario: Wiedergabeort wechseln
   Dann spielt das iPhone ab 1:02:10
   Und der Uhr-Player ist pausiert, nicht beendet
   Und die Pille zeigt "iPhone"
+
+Szenario: iPhone-Wiedergabe steuern
+  Angenommen auf dem iPhone läuft ein Hörbuch in Kapitel 17
+  Wenn ich auf der Uhr die Kachel "Jetzt läuft" tippe
+  Dann sehe ich den System-Player
+  Wenn ich "…" > "Kapitel" wähle und Kapitel 18 tippe
+  Dann springt das iPhone zu Kapitel 18
+  Wenn ich "…" > "Auf der Uhr abspielen" wähle
+  Dann spielt die Uhr an derselben Stelle weiter und das iPhone pausiert
 
 Szenario: Offline ohne Daten
   Angenommen die Watch hat keine gecachten Daten und das iPhone ist nicht erreichbar
@@ -171,12 +185,12 @@ Szenario: Sprache
 | T5 | `WatchConnectivityManager.swift` (Watch) | `isReachable` publizieren; Refresh/Fetch liefern Ergebnis/Fehler zurück (W3); Remote-Steuerbefehle (FR-3.9) |
 | T6 | `PlayerView.swift`, neu `Components/PlayerPills.swift` | Layout FR-3, Skip-Symbole nach Intervall (W9), lokalisierter Autor (W8) |
 | T7 | neu `Screens/Output/OutputPickerView.swift`; `ContentView.swift` | FR-4; Toolbar-Icon und `clearCurrent()`-Pfad entfernen (W6) |
-| T8 | `RemotePlayerView.swift` | Durch gemeinsamen Player mit Remote-Model ersetzen (FR-3.9) |
+| T8 | `RemotePlayerView.swift`, neu `Screens/RemotePlayer/RemoteOptionsSheet.swift` | „…“-Menü mit Tempo, Kapitel, Auf der Uhr abspielen; Befehle `seekToChapter`, `pause` ans iPhone (FR-3.9, ≈ 2 h) |
 | T9 | iPhone `Services/WatchConnectivityManager.swift`; Watch `Models/WatchBook.swift`, `LocalBookStorage` | `coverTint` in `watchBookItem` mitschicken und beim Download speichern; Remote-Befehle entgegennehmen |
 | T10 | `Localizable.xcstrings` (Watch) | Fehlende Übersetzungen, „von %@“ (W8) |
 | T11 | `AudioBoothWatchWidget/Complications/*` | Theme-Farbe, Deep-Link in Player (FR-6) |
 
-**Aufwand:** ca. 3–4 Tage. **Quick Wins vorab (≈ 2 h):** T1 (nur Dubletten), T2 (nur Leerzustand), T10, W9.
+**Aufwand:** ca. 2,5–3 Tage. **Quick Wins vorab (≈ 2 h):** T1 (nur Dubletten), T2 (nur Leerzustand), T10, W9.
 
 ## 9. Testplan
 
@@ -189,5 +203,5 @@ Szenario: Sprache
 | # | Frage | Status |
 |---|---|---|
 | 1 | „Jetzt läuft“ zeigt auch zuletzt pausierten Titel? | **Entschieden: ja**, bis 24 h nach Pause (FR-1.2) |
-| 2 | System-`NowPlayingView` für iPhone-Wiedergabe ersetzen (FR-3.9)? | **Offen** – Empfehlung: Phase 1 System-Player behalten, nur Einstieg über Kachel/Wiedergabeort; eigener Player in Phase 2 |
+| 2 | System-`NowPlayingView` für iPhone-Wiedergabe ersetzen (FR-3.9)? | **Entschieden: behalten**, „…“-Menü um Kapitel und „Auf der Uhr abspielen“ erweitern. Eigener Player ggf. Phase 2. |
 | 3 | Cover-Farbe: vom iPhone oder auf der Uhr berechnen? | **Entschieden: iPhone schickt sie mit** (`watchBookItem` → `coverTint` als Hex). Beim Download auf die Uhr wird sie mit dem Buch gespeichert, damit sie offline verfügbar ist. Fallback ohne Wert: neutrales Grau. |
