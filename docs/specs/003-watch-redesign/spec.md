@@ -53,8 +53,8 @@
 
 ### FR-1 Startseite (Design: *Watch · Start*)
 - FR-1.1 Titel „AudioBooth“ in Akzentfarbe, keine Toolbar-Icons für den Player mehr (W6).
-- FR-1.2 **„Jetzt läuft“-Kachel** (nur wenn etwas aktiv ist, Uhr **oder** iPhone):
-  - Hintergrund: Verlauf aus Cover-Farbe (gleiche Logik wie Spec 002 FR-1.2, Wert vom iPhone mitgeliefert oder lokal berechnet)
+- FR-1.2 **„Jetzt läuft“-Kachel** (wenn etwas läuft – Uhr **oder** iPhone – oder bis 24 h nach der letzten Pause):
+  - Hintergrund: Verlauf aus Cover-Farbe (gleiche Logik wie Spec 002 FR-1.2; Wert kommt vom iPhone, siehe §10.3)
   - Zeile „Jetzt auf der Uhr“ / „Jetzt auf dem iPhone“ mit Equalizer-Symbol
   - Cover 44 pt, Titel (2 Zeilen), Restzeit, Fortschrittsbalken, runder Play/Pause-Button
   - Tap auf Kachel → Player; Tap auf Button → nur Play/Pause
@@ -104,7 +104,7 @@
 - NFR-2 Alle Tap-Ziele ≥ 44 pt (Pillen 32 pt hoch, aber ≥ 44 pt breit).
 - NFR-3 VoiceOver: Kachel „Jetzt läuft“ als ein Element mit Aktionen Play/Pause und Öffnen; ✓-Markierung „Auf der Uhr“.
 - NFR-4 Dynamic Type bis xxxLarge: Titel umbrechen statt abschneiden.
-- NFR-5 Kein zusätzlicher Akkuverbrauch: keine neuen Timer/Polling; Farbextraktion einmal pro Cover, gecacht.
+- NFR-5 Kein zusätzlicher Akkuverbrauch: keine neuen Timer/Polling; keine Farbextraktion auf der Uhr.
 
 ## 6. Non-Goals
 
@@ -172,7 +172,7 @@ Szenario: Sprache
 | T6 | `PlayerView.swift`, neu `Components/PlayerPills.swift` | Layout FR-3, Skip-Symbole nach Intervall (W9), lokalisierter Autor (W8) |
 | T7 | neu `Screens/Output/OutputPickerView.swift`; `ContentView.swift` | FR-4; Toolbar-Icon und `clearCurrent()`-Pfad entfernen (W6) |
 | T8 | `RemotePlayerView.swift` | Durch gemeinsamen Player mit Remote-Model ersetzen (FR-3.9) |
-| T9 | iPhone `Services/WatchConnectivityManager.swift` | Optional Cover-Farbe in `watchBookItem` mitschicken; Remote-Befehle entgegennehmen |
+| T9 | iPhone `Services/WatchConnectivityManager.swift`; Watch `Models/WatchBook.swift`, `LocalBookStorage` | `coverTint` in `watchBookItem` mitschicken und beim Download speichern; Remote-Befehle entgegennehmen |
 | T10 | `Localizable.xcstrings` (Watch) | Fehlende Übersetzungen, „von %@“ (W8) |
 | T11 | `AudioBoothWatchWidget/Complications/*` | Theme-Farbe, Deep-Link in Player (FR-6) |
 
@@ -184,8 +184,10 @@ Szenario: Sprache
 - Previews/Snapshots: 41 mm, 45 mm, 49 mm (Ultra); alle Zustände FR-2; Deutsch + längste Sprache.
 - Manuell auf Gerät: Flugmodus am iPhone, Wechsel Uhr ↔ iPhone während Wiedergabe, Kopfhörer getrennt, Komplikations-Tap, VoiceOver.
 
-## 10. Offene Fragen
+## 10. Entscheidungen & offene Fragen
 
-1. Soll „Jetzt läuft“ auch einen zuletzt pausierten Titel zeigen (z. B. bis 24 h)? (Annahme: ja)
-2. Ersetzen wir die System-`NowPlayingView` für iPhone-Wiedergabe wirklich (FR-3.9, mehr Aufwand) oder behalten sie und passen nur den Einstieg an?
-3. Cover-Farbe vom iPhone mitschicken (weniger Last auf der Uhr) oder lokal berechnen?
+| # | Frage | Status |
+|---|---|---|
+| 1 | „Jetzt läuft“ zeigt auch zuletzt pausierten Titel? | **Entschieden: ja**, bis 24 h nach Pause (FR-1.2) |
+| 2 | System-`NowPlayingView` für iPhone-Wiedergabe ersetzen (FR-3.9)? | **Offen** – Empfehlung: Phase 1 System-Player behalten, nur Einstieg über Kachel/Wiedergabeort; eigener Player in Phase 2 |
+| 3 | Cover-Farbe: vom iPhone oder auf der Uhr berechnen? | **Entschieden: iPhone schickt sie mit** (`watchBookItem` → `coverTint` als Hex). Beim Download auf die Uhr wird sie mit dem Buch gespeichert, damit sie offline verfügbar ist. Fallback ohne Wert: neutrales Grau. |
