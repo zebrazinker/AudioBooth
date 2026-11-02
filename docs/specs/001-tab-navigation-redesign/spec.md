@@ -1,12 +1,14 @@
-# Spec 001 – Tab-Navigation: Hörbücher & Podcasts als feste Tabs
+# Spec 001 – Tab-Navigation: Hörbücher, Podcasts & E-Books als feste Tabs
 
 | | |
 |---|---|
-| **Status** | Draft |
+| **Status** | Draft v2 |
 | **Datum** | 2026-11-02 |
-| **Design** | [AudioBooth Redesign (Canvas)](https://claude.ai/artifact/66Qha78m1FkuVMvqcfvLmT) – Screens *Start*, *Hörbücher*, *Podcasts* |
-| **Betroffene Plattform** | iOS / iPadOS (iOS 18+, Liquid-Glass-Variante ab iOS 26) |
-| **Nicht betroffen** | CarPlay, watchOS, Mac Catalyst-spezifische Menüs (siehe Non-Goals) |
+| **Design** | [AudioBooth Redesign (Canvas)](https://claude.ai/artifact/66Qha78m1FkuVMvqcfvLmT) – Screens *Start*, *Hörbücher*, *Podcasts*, *E-Books* |
+| **Plattform** | iOS / iPadOS 18+, Liquid Glass ab iOS 26 |
+| **Nicht betroffen** | CarPlay, watchOS (siehe Non-Goals) |
+
+**Leitprinzipien:** modern (Liquid Glass) · einfach · übersichtlich. Eine feste Tab-Leiste, ein Ort pro Medientyp, keine versteckten Menüs für die Hauptnavigation.
 
 ---
 
@@ -18,146 +20,183 @@ Heute ist die Navigation **bibliotheksabhängig**:
 - Die Tab-Leiste (`ContentView.swift`) baut sich je nach `libraries.current.mediaType` komplett um:
   - Buch-Bibliothek: Home · Library · Collections · Downloads · Suche
   - Podcast-Bibliothek: Home · Latest · Library · Downloads · Suche
-- Folge: Tabs „springen“, gleiche Labels („Library“) bedeuten Unterschiedliches, und der Wechsel Hörbuch ↔ Podcast erfordert drei Taps in einem versteckten Menü.
+- E-Books liegen in einer eigenen Buch-Bibliothek und sind nur über dasselbe Menü erreichbar.
+- Folge: Tabs „springen“, gleiche Labels („Library“) bedeuten Unterschiedliches, Medienwechsel braucht drei Taps in einem versteckten Menü.
 
 ## 2. Ziel
 
-Hörbücher und Podcasts sind **gleichwertige, feste Tabs** in der unteren Leiste. Die Tab-Leiste ändert sich nie. Der Bibliothekswechsel oben links entfällt als primäre Navigation.
+Hörbücher, Podcasts und E-Books sind **gleichwertige, feste Tabs**. Die Tab-Leiste ändert sich nie. Der Bibliothekswechsel oben links entfällt.
+
+```
+┌───────────────────────────────────────────┐  ┌────┐
+│ Start │ Hörbücher │ Podcasts │ E-Books    │  │ 🔍 │
+└───────────────────────────────────────────┘  └────┘
+```
 
 ## 3. User Stories
 
 | ID | Als … | möchte ich … | damit … |
 |---|---|---|---|
-| US-1 | Hörer | mit **einem Tap** zwischen Hörbüchern und Podcasts wechseln | ich nicht ins Menü oben links muss |
-| US-2 | Hörer | dass die Tab-Leiste immer gleich aussieht | ich mich auf die Position der Tabs verlassen kann |
-| US-3 | Hörer mit mehreren Buch-Bibliotheken (z. B. „Hörbücher“, „E-Books“) | innerhalb des Hörbücher-Tabs die Bibliothek wechseln | ich trotzdem alle Bibliotheken erreiche |
-| US-4 | Hörer | Serien, Autoren, Sprecher und Sammlungen im Hörbücher-Tab finden | ich keinen eigenen „Collections“-Tab brauche |
-| US-5 | Podcast-Hörer | neueste Folgen und abonnierte Podcasts im Podcasts-Tab sehen | ich keinen eigenen „Latest“-Tab brauche |
-| US-6 | Nutzer | Server-Status, Serverwechsel und Einstellungen über einen Profil-Button erreichen | diese Funktionen nicht verloren gehen |
+| US-1 | Nutzer | mit **einem Tap** zwischen Hörbüchern, Podcasts und E-Books wechseln | ich nicht ins Menü oben links muss |
+| US-2 | Nutzer | dass die Tab-Leiste immer gleich aussieht | ich mich auf die Position der Tabs verlassen kann |
+| US-3 | Nutzer | Serien, Autoren, Sprecher und Sammlungen im jeweiligen Medien-Tab finden | es keine Extra-Tabs braucht |
+| US-4 | Podcast-Hörer | neueste Folgen und abonnierte Podcasts im Podcasts-Tab sehen | es keinen eigenen „Latest“-Tab braucht |
+| US-5 | Nutzer | Downloads, Server und Einstellungen über einen Profil-Button erreichen | die Tab-Leiste schlank bleibt |
+| US-6 | Nutzer mit eigener Bibliotheks-Benennung | festlegen, welche Buch-Bibliothek Hörbücher und welche E-Books enthält | die Tabs richtig befüllt sind |
 
 ## 4. Funktionale Anforderungen
 
 ### FR-1 Tab-Leiste
-- FR-1.1 Die Tab-Leiste enthält genau: **Start · Hörbücher · Podcasts · Downloads · Suche** (Reihenfolge fix).
-- FR-1.2 Die Tabs sind unabhängig von `libraries.current` sichtbar, sobald ein Server authentifiziert ist.
-- FR-1.3 Hat der Server **keine** Bibliothek eines Typs, wird der zugehörige Tab ausgeblendet (nicht deaktiviert).
-- FR-1.4 Erneutes Tippen auf den aktiven Tab scrollt nach oben / poppt zum Root (bestehendes `onTabItemTapped()`-Verhalten bleibt).
-- FR-1.5 iOS 26: Suche bleibt `Tab(role: .search)`; `tabBarMinimizeBehavior(.onScrollDown)` und `tabViewBottomAccessory` (Mini-Player) bleiben erhalten.
-- FR-1.6 iOS 18–25 (`legacyTabView`): gleiche Tabs, Suche als normaler Tab.
+- FR-1.1 Tabs (fix, in dieser Reihenfolge): **Start · Hörbücher · Podcasts · E-Books**, plus **Suche** als separater Such-Tab.
+- FR-1.2 **Downloads ist kein Tab mehr** (Platz für E-Books; max. 5 Elemente auf dem iPhone). Downloads erreichbar über:
+  - Profil-Menü → „Downloads“ (bisherige `DownloadsRootPage`)
+  - Filter „Nur geladene“ in jedem Medien-Tab (FR-3.4)
+- FR-1.3 Tabs sind unabhängig von `libraries.current` sichtbar, sobald ein Server authentifiziert ist.
+- FR-1.4 Existiert für einen Medientyp keine Bibliothek, wird dessen Tab ausgeblendet.
+- FR-1.5 Erneutes Tippen auf den aktiven Tab poppt zum Root / scrollt nach oben (bestehendes `onTabItemTapped()`).
+- FR-1.6 Navigations-State (Pfad, Scrollposition, Segment) jedes Tabs bleibt beim Wechsel erhalten.
 
-### FR-2 Bibliotheks-Kontext pro Tab (Phase 1)
-- FR-2.1 Wird der Tab **Hörbücher** aktiv, wird `libraries.current` auf die zuletzt genutzte Bibliothek mit `mediaType == .book` gesetzt (Fallback: erste Buch-Bibliothek).
-- FR-2.2 Analog setzt der Tab **Podcasts** die zuletzt genutzte Bibliothek mit `mediaType == .podcast`.
-- FR-2.3 Die „zuletzt genutzte“ Bibliothek je Typ wird pro Server persistiert (`server.storage`, neuer Key je `MediaType`).
-- FR-2.4 Start, Downloads und Suche verwenden weiterhin `libraries.current` (= zuletzt über Hörbücher/Podcasts gewählt).
-- FR-2.5 Ein Tab-Wechsel darf **nicht** den globalen Bild-Cache leeren (heute: `ImagePipeline.shared.cache.removeAll()` im Setter von `LibrariesService.current`). Der Cache-Reset ist auf Serverwechsel zu beschränken.
-- FR-2.6 Der Navigations-State (`NavigationStack`-Pfad, Scrollposition, gewähltes Segment) jedes Tabs bleibt beim Hin- und Herwechseln erhalten.
+### FR-2 Medientyp ↔ Bibliothek
+Audiobookshelf kennt nur `MediaType.book` und `.podcast` (`API/.../Models/Library.swift`). E-Books brauchen daher eine App-seitige Zuordnung.
+
+- FR-2.1 Neuer App-Typ `MediaTab { audiobooks, podcasts, ebooks }`.
+- FR-2.2 Podcast-Bibliotheken → `podcasts` (automatisch).
+- FR-2.3 Buch-Bibliotheken → standardmäßig `audiobooks`; Name enthält „ebook“ / „e-book“ / „bücher“ ohne „hör“ (case-insensitive) → `ebooks`.
+- FR-2.4 Zuordnung überschreibbar unter Einstellungen → „Bibliotheken“ (pro Server persistiert in `server.storage`).
+- FR-2.5 Mehrere Bibliotheken pro Tab: Picker „Bibliothek: ‹Name› ▾“ unter dem Titel; bei genau einer entfällt er.
+- FR-2.6 **Phase 1:** Tab-Wechsel setzt `libraries.current` auf die zuletzt genutzte Bibliothek dieses Tabs (pro Tab persistiert).
+- FR-2.7 Tab-Wechsel darf **nicht** den Bild-Cache leeren. Heute: `ImagePipeline.shared.cache.removeAll()` im Setter von `LibrariesService.current` → nur noch beim Serverwechsel.
 
 ### FR-3 Hörbücher-Tab
-- FR-3.1 Großer Titel „Hörbücher“.
-- FR-3.2 Gibt es > 1 Buch-Bibliothek, steht darunter ein Picker „Bibliothek: ‹Name› ▾“ (Menu). Bei genau einer Bibliothek entfällt er.
-- FR-3.3 Segmented Control: **Titel · Serien · Autoren · Sprecher · Sammlungen** (erweitert den bestehenden Picker in `LibraryRootPage` um Serien/Sammlungen; `CollectionsRootPage` wird als Segment eingebettet).
-- FR-3.4 Grid-Darstellung mit Fortschrittsbalken am Cover-Unterrand (siehe Design).
+- FR-3.1 Großer Titel „Hörbücher“, rechts Glass-Button „Sortieren/Filtern“.
+- FR-3.2 Segmented Control: **Titel · Serien · Autoren · Sammlungen** (Sprecher als Filter unter „Autoren“). Bestehender Picker in `LibraryRootPage` wird erweitert; `CollectionsRootPage` als Segment eingebettet.
+- FR-3.3 Quadratisches 3er-Grid, Fortschritt als 3-px-Linie am Cover-Unterrand.
+- FR-3.4 Filter-Menü enthält „Nur geladene“.
 
 ### FR-4 Podcasts-Tab
-- FR-4.1 Großer Titel „Podcasts“, Button „+“ (Podcast hinzufügen, falls Berechtigung vorhanden).
-- FR-4.2 Segmented Control: **Neueste Folgen · Abonniert** (`LatestView` bzw. `PodcastsRootPage`).
-- FR-4.3 Optional (Phase 2): horizontale Reihe abonnierter Podcasts mit Badge „neue Folgen“.
-- FR-4.4 Mehrere Podcast-Bibliotheken: Picker wie FR-3.2.
+- FR-4.1 Großer Titel „Podcasts“, Glass-Button „+“ (falls Berechtigung).
+- FR-4.2 Segmented Control: **Neueste Folgen · Abonniert** (`LatestView` / `PodcastsRootPage`).
+- FR-4.3 Horizontale Reihe abonnierter Podcasts mit Badge „neue Folgen“.
+- FR-4.4 Folgen als Liste: Podcast · Datum, Titel, 2 Zeilen Beschreibung, Pill „▶ Dauer“, Download, Mehr.
 
-### FR-5 Start-Tab
-- FR-5.1 Begrüßung statt Bibliotheksname in der Toolbar.
-- FR-5.2 Rechts oben: Profil-Button (Avatar mit Status-Punkt grün/orange/rot/grau gem. `connectionStatusColor`). Inhalt: Server-URL primär/alternativ, Server-Details, Server verwalten, Einstellungen.
-- FR-5.3 Die Bibliotheksliste wird aus diesem Menü **entfernt**.
-- FR-5.4 Phase 1: Inhalte wie bisher aus `libraries.current`. Phase 2: gemischte Inhalte (siehe §7).
+### FR-5 E-Books-Tab
+- FR-5.1 Großer Titel „E-Books“, Glass-Button „Sortieren/Filtern“.
+- FR-5.2 Segmented Control: **Titel · Serien · Autoren · Sammlungen** (gleiche Komponente wie FR-3.2).
+- FR-5.3 Abschnitt „Weiterlesen“ (Fortschritt in %) über dem Grid.
+- FR-5.4 Grid im Buchformat 2:3; Tap öffnet direkt den Reader (`EbookReaderView`), Long-Press die Details.
 
-### FR-6 Mini-Player & Theme
-- FR-6.1 Mini-Player unverändert funktional; optisch: Fortschritt als 2-px-Linie am Unterrand.
-- FR-6.2 Akzentfarbe ist bereits über `AppTheme` steuerbar – kein Hardcoding neuer Farben.
+### FR-6 Start-Tab
+- FR-6.1 Datum + Begrüßung („Hallo, ‹Name›“) als großer Titel.
+- FR-6.2 Rechts: Profil-Button (Avatar mit Status-Punkt gem. `connectionStatusColor`). Menü: Downloads, Server-URL primär/alternativ, Server-Details, Server verwalten, Einstellungen. **Keine Bibliotheksliste.**
+- FR-6.3 Phase 1: Inhalte aus `libraries.current`. Phase 2: gemischt aus allen Tabs (§7).
+
+### FR-7 Liquid Glass / Visuelles Design
+- FR-7.1 **iOS 26:** ausschließlich System-Komponenten, damit Liquid Glass automatisch greift:
+  - `TabView` mit `Tab(...)`, Suche als `Tab(role: .search)` (erscheint als separater Glass-Kreis rechts)
+  - `tabBarMinimizeBehavior(.onScrollDown)`
+  - Mini-Player in `tabViewBottomAccessory`
+  - Toolbar-Buttons ohne eigene Hintergründe (System-Glass); eigene schwebende Elemente mit `.glassEffect()`
+  - Keine eigenen Hintergründe/Farben auf Tab-Bar oder Toolbar.
+- FR-7.2 **iOS 18–25:** gleiche Struktur, Tab-Bar Standard, schwebende Elemente mit `.ultraThinMaterial`.
+- FR-7.3 Inhalte scrollen unter Tab-Bar und Mini-Player durch (kein Abschneiden, `safeAreaInset` korrekt).
+- FR-7.4 Eine Akzentfarbe über `AppTheme` (Vorschlag Bernstein `#F2A33A`) für aktiven Tab, Fortschritt, Links. Sonst neutral.
+- FR-7.5 Typografie: System (SF Pro), Large Titles 34 pt bold, Abschnittstitel 22 pt bold.
+- FR-7.6 Mini-Player: Cover, Titel, „Podcast/Autor · noch X Min.“, Play/Pause; Fortschritt als 2-px-Linie am Unterrand.
 
 ## 5. Nicht-funktionale Anforderungen
 
-- NFR-1 Tab-Wechsel Hörbücher ↔ Podcasts < 300 ms bis Inhalt sichtbar (aus Cache).
-- NFR-2 Keine zusätzlichen Netzwerk-Requests beim reinen Tab-Wechsel, wenn Daten < 5 min alt.
-- NFR-3 VoiceOver: Tabs mit eindeutigen Labels; Profil-Button `accessibilityLabel` inkl. Verbindungsstatus.
-- NFR-4 Lokalisierung: neue Strings in `Localizable.xcstrings` (de, en mindestens).
+- NFR-1 Tab-Wechsel < 300 ms bis Inhalt sichtbar (aus Cache).
+- NFR-2 Keine Netzwerk-Requests beim reinen Tab-Wechsel, wenn Daten < 5 min alt.
+- NFR-3 VoiceOver: eindeutige Tab-Labels; Profil-Button-Label inkl. Verbindungsstatus.
+- NFR-4 Neue Strings in `Localizable.xcstrings` (de, en).
 - NFR-5 Dynamic Type bis AX3 ohne abgeschnittene Tab-Labels.
+- NFR-6 „Transparenz reduzieren“ (Bedienungshilfen) wird respektiert – Glass fällt auf opake Flächen zurück (System-Verhalten, nicht überschreiben).
 
 ## 6. Non-Goals
 
 - Kein Umbau von CarPlay (`CarPlay/CarPlayTabBar.swift`) oder watchOS.
-- Keine Änderung an Player, Downloads-Logik, Sync.
+- Keine Änderung an Player-, Download- oder Sync-Logik.
 - Keine neuen Server-API-Aufrufe.
 - Keine bibliotheksübergreifende Suche (Phase 2+).
 
 ## 7. Phase 2 (separat zu spezifizieren)
 
-Echter paralleler Kontext: Hörbücher- und Podcasts-Tab halten je eine eigene Bibliothek, Start zeigt **gemischt** „Weiterhören“ und „Neue Folgen“ aus allen Bibliotheken. Erfordert, `libraries.current` (≈ 100 Verwendungen in 26 Dateien, u. a. `PlayerManager`, `DownloadManager`, `PinnedPlaylistManager`, `SearchViewModel`) durch einen injizierten Bibliotheks-Kontext zu ersetzen. Aufwand ca. 1–2 Wochen.
+Echter paralleler Kontext: jeder Tab hält seine eigene Bibliothek, Start zeigt **gemischt** „Weiterhören“, „Weiterlesen“ und „Neue Folgen“ aus allen Bibliotheken. Erfordert, `libraries.current` (≈ 100 Verwendungen in 26 Dateien, u. a. `PlayerManager`, `DownloadManager`, `PinnedPlaylistManager`, `SearchViewModel`) durch einen injizierten Bibliotheks-Kontext zu ersetzen. Aufwand ca. 1–2 Wochen.
 
 ## 8. Akzeptanzkriterien (Gherkin)
 
 ```gherkin
 Szenario: Feste Tab-Leiste
-  Angenommen ein Server mit einer Buch- und einer Podcast-Bibliothek
+  Angenommen ein Server mit Bibliotheken "Hörbücher", "Podcasts" und "E-Books"
   Wenn die App startet
-  Dann zeigt die Tab-Leiste "Start, Hörbücher, Podcasts, Downloads, Suche"
-  Und die Tab-Leiste ändert sich nicht, wenn ich zwischen Tabs wechsle
+  Dann zeigt die Tab-Leiste "Start, Hörbücher, Podcasts, E-Books" und den Such-Button
+  Und die Tab-Leiste ändert sich beim Wechsel zwischen Tabs nicht
 
 Szenario: Wechsel mit einem Tap
   Angenommen ich bin im Tab "Hörbücher"
-  Wenn ich auf "Podcasts" tippe
-  Dann sehe ich die neuesten Folgen meiner Podcast-Bibliothek
-  Und libraries.current ist die Podcast-Bibliothek
+  Wenn ich auf "E-Books" tippe
+  Dann sehe ich "Weiterlesen" und das Grid meiner E-Book-Bibliothek
+
+Szenario: Automatische E-Book-Zuordnung
+  Angenommen der Server hat die Buch-Bibliotheken "Hörbücher" und "E-Books"
+  Dann erscheint "Hörbücher" im Tab "Hörbücher"
+  Und "E-Books" im Tab "E-Books"
+
+Szenario: Zuordnung manuell ändern
+  Angenommen eine Buch-Bibliothek "Lesestoff"
+  Wenn ich sie in Einstellungen > Bibliotheken dem Typ "E-Books" zuordne
+  Dann erscheint sie im Tab "E-Books"
+
+Szenario: Fehlender Medientyp
+  Angenommen der Server hat keine Podcast-Bibliothek
+  Dann wird der Tab "Podcasts" nicht angezeigt
 
 Szenario: Zustand bleibt erhalten
   Angenommen ich habe im Tab "Hörbücher" ein Buch-Detail geöffnet
   Wenn ich zu "Podcasts" und zurück wechsle
   Dann sehe ich weiterhin das Buch-Detail
 
-Szenario: Keine Podcast-Bibliothek
-  Angenommen der Server hat nur Buch-Bibliotheken
-  Dann wird der Tab "Podcasts" nicht angezeigt
-
-Szenario: Mehrere Buch-Bibliotheken
-  Angenommen der Server hat "Hörbücher" und "E-Books"
-  Wenn ich im Tab "Hörbücher" den Picker auf "E-Books" stelle
-  Dann zeigt das Grid die E-Books
-  Und nach App-Neustart ist "E-Books" im Tab "Hörbücher" vorausgewählt
-
 Szenario: Bild-Cache bleibt erhalten
   Angenommen Cover im Tab "Hörbücher" wurden geladen
   Wenn ich zu "Podcasts" und zurück wechsle
   Dann werden die Cover ohne erneuten Download angezeigt
 
-Szenario: Server-Funktionen erreichbar
+Szenario: Downloads erreichbar
   Wenn ich auf den Profil-Button tippe
-  Dann sehe ich Verbindungsstatus, "Server-Details" und "Server verwalten"
+  Dann sehe ich "Downloads", "Server-Details", "Server verwalten" und "Einstellungen"
   Und keine Bibliotheksliste
+
+Szenario: Liquid Glass
+  Angenommen iOS 26
+  Wenn ich in einer Liste nach unten scrolle
+  Dann minimiert sich die Tab-Leiste
+  Und Inhalte sind unter Tab-Leiste und Mini-Player durchscheinend sichtbar
 ```
 
 ## 9. Technischer Plan (Phase 1)
 
 | # | Datei(en) | Änderung |
 |---|---|---|
-| T1 | `API/.../LibrariesService.swift` | `lastUsed(for: MediaType) -> Library?` + Setter, persistiert in `server.storage`; Cache-Clear aus `current`-Setter in Serverwechsel verschieben |
-| T2 | `ContentView.swift` | `TabSelection` → `.home, .audiobooks, .podcasts, .downloads, .search`; beide TabViews auf feste Tabs umbauen; bei Tab-Wechsel `libraries.current = lastUsed(for:)` |
-| T3 | `Screens/Library/LibraryRootPage.swift` | Segmente Serien + Sammlungen ergänzen, `CollectionsRootPage`-Inhalt einbetten; Bibliotheks-Picker (FR-3.2) |
-| T4 | `Screens/Library/PodcastsRootPage.swift`, `Screens/Latest/LatestView.swift` | Gemeinsamer Container mit Segment „Neueste Folgen / Abonniert“; Picker (FR-4.4) |
-| T5 | `Screens/Home/HomePage.swift`, `HomePageModel.swift` | `serverMenuToolbarItem` → Profil-Button, Bibliotheksliste entfernen, Begrüßung |
-| T6 | `Localizable.xcstrings` | Neue Strings |
-| T7 | `AppTheme` / Mini-Player | Fortschrittslinie, Feinschliff gem. Design |
+| T1 | `API/.../LibrariesService.swift` | `MediaTab`-Zuordnung (Heuristik + Override), `lastUsed(for: MediaTab)`; Cache-Clear nur bei Serverwechsel |
+| T2 | `ContentView.swift` | `TabSelection` → `.home, .audiobooks, .podcasts, .ebooks, .search`; feste Tabs in `modernTabView` und `legacyTabView`; beim Tab-Wechsel `libraries.current` setzen; Downloads-Tab entfernen |
+| T3 | `Screens/Library/LibraryRootPage.swift` | Wiederverwendbar für Hörbücher **und** E-Books (Parameter `MediaTab`); Segmente Titel/Serien/Autoren/Sammlungen; Bibliotheks-Picker; Filter „Nur geladene“ |
+| T4 | neu: `Screens/EBooks/` (dünn) | „Weiterlesen“-Sektion + 2:3-Grid, Tap → Reader |
+| T5 | `PodcastsRootPage.swift`, `LatestView.swift` | Container mit Segment „Neueste Folgen / Abonniert“, Podcast-Reihe |
+| T6 | `HomePage.swift`, `HomePageModel.swift` | Profil-Button statt `serverMenuToolbarItem`, Downloads-Eintrag, Begrüßung |
+| T7 | `Screens/Settings/` | Abschnitt „Bibliotheken“: Zuordnung Hörbücher/E-Books |
+| T8 | Mini-Player, `AppTheme` | Fortschrittslinie, Akzentfarbe, eigene Hintergründe entfernen (Glass) |
+| T9 | `Localizable.xcstrings` | Neue Strings |
 
-**Aufwand Phase 1:** ca. 1,5–2 Tage inkl. Test.
+**Aufwand Phase 1:** ca. 2,5–3 Tage inkl. Test.
 
 ## 10. Testplan
 
-- Unit: `LibrariesService.lastUsed(for:)` – Persistenz, Fallback, Serverwechsel.
-- UI-Test: Szenarien aus §8 auf iOS 18 (legacy) und iOS 26 (modern).
-- Manuell: iPad (Split View / `isPartiallyFolded`), Dynamic Type AX3, VoiceOver, Server ohne Podcast-Bibliothek, Offline-Modus.
+- Unit: Zuordnungs-Heuristik (Namen, Override), `lastUsed(for:)`, Serverwechsel.
+- UI-Test: Szenarien aus §8 auf iOS 18 und iOS 26.
+- Manuell: iPad, Dynamic Type AX3, VoiceOver, „Transparenz reduzieren“, Server ohne Podcast-/E-Book-Bibliothek, Offline-Modus.
 
 ## 11. Offene Fragen
 
-1. Sollen E-Books einen eigenen Tab bekommen oder im Hörbücher-Tab per Picker bleiben? (Annahme: Picker)
-2. Wohin mit „Sprecher“ – eigenes Segment oder unter „Autoren“? (Annahme: eigenes Segment, wie heute)
-3. Soll die Akzentfarbe (Design: Bernstein) Default werden oder nur eine Theme-Option?
-4. Mac Catalyst: Tab-Leiste oder Sidebar?
+1. Akzentfarbe Bernstein als Default oder nur als Theme-Option?
+2. iPad / Mac Catalyst: Tab-Leiste oder `.sidebarAdaptable`-Sidebar? (Vorschlag: `tabViewStyle(.sidebarAdaptable)` – fast gratis)
+3. Gemischte Bibliotheken (Hörbuch + E-Book im selben Item): erscheint es in beiden Tabs? (Annahme Phase 1: nur in der zugeordneten Bibliothek)
