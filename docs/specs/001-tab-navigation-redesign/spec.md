@@ -103,6 +103,24 @@ Audiobookshelf kennt nur `MediaType.book` und `.podcast` (`API/.../Models/Librar
 - FR-7.5 Typografie: System (SF Pro), Large Titles 34 pt bold, Abschnittstitel 22 pt bold.
 - FR-7.6 Mini-Player: Cover, Titel, „Podcast/Autor · noch X Min.“, Play/Pause; Fortschritt als 2-px-Linie am Unterrand.
 
+### FR-8 Downloads
+Design: Screen *Downloads (über Profil)*; Cover-Markierungen in *Start*, *Hörbücher*, *E-Books*.
+
+- FR-8.1 **Cover-Markierung** überall, wo Cover gezeigt werden (Grids, Listen, „Weiterhören“-Karten):
+  - geladen: runder Badge 22 pt oben rechts, halbtransparent schwarz, weißer ↓-Pfeil (bestehendes `BookCard.coverBadge` vereinheitlichen)
+  - lädt: gleicher Badge als Fortschrittsring in Akzentfarbe
+  - in kompakten Karten (Start): kleines ↓-Symbol neben dem Typ-Label
+  - `accessibilityLabel` „Geladen“ / „Wird geladen, ‹n› Prozent“
+- FR-8.2 **Downloads-Seite** (Push aus Profil-Menü, ersetzt `DownloadsRootPage` als Tab):
+  - Speicherkarte: Gesamtgröße, freier Gerätespeicher, gestapelter Balken nach Hörbücher / Podcasts / E-Books mit Legende
+  - „Wird geladen“: Cover, Titel, Fortschrittsbalken, „‹geladen› von ‹gesamt› · ca. ‹Restzeit›“, Abbrechen-Button mit Ring (bestehend `DownloadingListView`)
+  - Abschnitte **Hörbücher · Podcasts · E-Books** (leere Abschnitte ausblenden): Cover, Titel, Autor/Podcast · Fortschritt, Größe rechts (bestehend `OfflineListView`, gruppiert)
+  - Löschen per Wischgeste; „Bearbeiten“ für Mehrfachauswahl; gehörte Titel zuerst als „gehört“ markiert
+  - Tap auf Eintrag → Detailseite
+- FR-8.3 **Hinweis bei Abschluss:** kurzer Toast „‹Titel› geladen“; bei Fehler „Download fehlgeschlagen – Erneut versuchen“.
+- FR-8.4 Filter „Nur geladene“ in Hörbücher-, Podcasts- und E-Books-Tab (siehe FR-3.4).
+- FR-8.5 Watch: siehe Spec 003 (eigene Markierung „Auf der Uhr“).
+
 ## 5. Nicht-funktionale Anforderungen
 
 - NFR-1 Tab-Wechsel < 300 ms bis Inhalt sichtbar (aus Cache).
@@ -166,6 +184,20 @@ Szenario: Downloads erreichbar
   Dann sehe ich "Downloads", "Server-Details", "Server verwalten" und "Einstellungen"
   Und keine Bibliotheksliste
 
+Szenario: Download-Markierung
+  Angenommen "Das Zeitalter der Unschärfe" ist geladen
+  Und "A Promised Land" wird gerade geladen (40 %)
+  Wenn ich den Tab "Hörbücher" öffne
+  Dann trägt das erste Cover den Badge "Geladen"
+  Und das zweite einen Fortschrittsring bei 40 %
+
+Szenario: Downloads verwalten
+  Wenn ich Profil > Downloads öffne
+  Dann sehe ich den belegten Speicher nach Medientyp
+  Und die geladenen Titel gruppiert nach Hörbücher, Podcasts, E-Books
+  Wenn ich einen Eintrag nach links wische und "Löschen" tippe
+  Dann wird der Download entfernt und der Speicherbalken aktualisiert
+
 Szenario: Liquid Glass
   Angenommen iOS 26
   Wenn ich in einer Liste nach unten scrolle
@@ -186,8 +218,11 @@ Szenario: Liquid Glass
 | T7 | `Screens/Settings/` | Abschnitt „Bibliotheken“: Zuordnung Hörbücher/E-Books |
 | T8 | Mini-Player, `AppTheme` | Fortschrittslinie, Akzentfarbe, eigene Hintergründe entfernen (Glass) |
 | T9 | `Localizable.xcstrings` | Neue Strings |
+| T10 | `BookCard.swift`, Start-Karten, `Cover` | Einheitlicher Download-Badge inkl. Fortschrittsring (FR-8.1) |
+| T11 | `Screens/Downloads/*` | Speicherkarte, Gruppierung nach Medientyp, Wischen zum Löschen, Push statt Tab (FR-8.2) |
+| T12 | `DownloadManager` → UI | Toast bei Abschluss/Fehler (FR-8.3) |
 
-**Aufwand Phase 1:** ca. 2,5–3 Tage inkl. Test.
+**Aufwand Phase 1:** ca. 3,5–4 Tage inkl. Test.
 
 ## 10. Testplan
 
